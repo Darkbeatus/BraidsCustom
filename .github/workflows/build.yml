@@ -9,18 +9,17 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Clone Missing stmlib Dependency
+      - name: Clone stmlib into Braids Directory
         run: |
-          if [ ! -d "stmlib" ]; then
-            git clone https://github.com/pichenettes/stmlib.git stmlib
-          fi
+          rm -rf braids/stmlib
+          git clone https://github.com/pichenettes/stmlib.git braids/stmlib
 
       - name: Install ARM GCC Toolchain
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc-arm-none-eabi build-essential python3
 
-      - name: Compile Braids and Generate WAV
+      - name: Compile Braids Firmware
         run: |
           cd braids
           make clean
@@ -31,4 +30,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: braids-909-rumble-wav
-          path: build/braids/braids.wav
+          path: braids/build/braids/braids.wav
