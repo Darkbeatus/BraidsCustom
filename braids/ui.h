@@ -1,6 +1,6 @@
-// Copyright 2012 Emilie Gillet.
+// Copyright 2012 Olivier Gillet.
 //
-// Author: Emilie Gillet (emilie.o.gillet@gmail.com)
+// Author: Olivier Gillet (pichenettes@mutable-instruments.net)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -26,113 +26,73 @@
 //
 // User interface.
 
-#ifndef BRAIDS_UI_H_
-#define BRAIDS_UI_H_
+#include "braids/ui.h"
 
-#include "stmlib/stmlib.h"
+#include <algorithm>
 
-#include "stmlib/ui/event_queue.h"
+#include "stmlib/system/stmlib.h"
 
-#include "braids/drivers/display.h"
-#include "braids/drivers/encoder.h"
+#include "braids/resources.h"
 #include "braids/settings.h"
 
 namespace braids {
 
-enum UiMode {
-  MODE_SPLASH,
-  MODE_EDIT,
-  MODE_MENU,
-  MODE_CALIBRATION_STEP_1,
-  MODE_CALIBRATION_STEP_2,
-  MODE_MARQUEE_EDITOR
-};
+using namespace stmlib;
 
-class Ui {
- public:
-  Ui() { }
-  ~Ui() { }
+void Ui::Init() {
+  hw_.Init();
+  display_.Init();
   
-  void Init();
-  void Poll();
-  void DoEvents();
-  void FlushEvents();
-  void Print(const char* text) {
-    display_.Print(text);
-  }
-  void PrintDebugInteger(uint16_t x) {
-    char buffer[5];
-    buffer[4] = '\0';
-    for (uint16_t i = 0; i < 4; ++i) {
-      buffer[3 - i] = '0' + (x % 10);
-      x /= 10;
-    }
-    Print(buffer);
+  // Custom power-on boot splash for 909 Pure-Rumble Engine
+  display_.Clear();
+  display_.Print(0, 28, "CAN YOU KICK IT");
+  display_.Write();
+  
+  // Delay loop to hold the startup banner on screen
+  for (volatile uint32_t i = 0; i < 3000000; ++i) {
+    __NOP(); 
   }
   
-  inline void UpdateCv(
-      int16_t cv_param,
-      int16_t cv_color,
-      int16_t cv_pitch,
-      int16_t cv_fm) {
-    cv_[0] = cv_param;
-    cv_[1] = cv_color;
-    cv_[2] = cv_pitch;
-    cv_[3] = cv_fm;
-  }
+  display_.Clear();
   
-  inline void StepMarquee() {
-    marquee_step_++;
-    blink_ = true;
-  }
+  settings_.Init();
+  canvas_.Init();
   
-  inline bool paques() const {
-    return mode_ == MODE_MENU && \
-        setting_ == SETTING_MARQUEE && \
-        settings.paques();
-  }
+  mode_ = UI_MODE_SETTINGS;
+  state_ = UI_STATE_PULL;
   
-  // Overrides oscillator shape display when in meta mode.
-  inline void set_meta_shape(MacroOscillatorShape shape) {
-    meta_shape_ = shape;
-  }
-  
- private:
-  void OnIncrement(const stmlib::Event& event);
-  void OnClick();
-  void OnLongClick();
-  void RefreshDisplay();
+  encoder_state_ = 0;
+  press_time_ = 0;
+}
 
-  stmlib::EventQueue<16> queue_;
+void Ui::Poll() {
+  hw_.Debounce();
+  evented_ = false;
   
-  uint32_t encoder_press_time_;
-  bool inhibit_further_switch_events_;
+  uint8_t previous_state = state_;
   
-  int16_t value_;
-  uint8_t sub_clock_;
-  
-  UiMode mode_;
-  int16_t setting_index_;
-  Setting setting_;
-  
-  Display display_;
-  Encoder encoder_;
-  
-  int16_t adc_code_c2_;
-  int16_t adc_code_min_[2];
-  int16_t cv_[4];
-  
-  uint8_t splash_frame_;
-  uint8_t marquee_step_;
-  uint8_t marquee_character_;
-  bool marquee_dirty_character_;
-  bool blink_;
-  
-  MacroOscillatorShape meta_shape_;
+  switch (state_) {
+    case UI_STATE_PULL:
+      if (hw_.encoder_pressed()) {
+        state_ = UI_STATE_EDIT_PARAM_1;
+      }
+      break;
+      
+    case UI_STATE_EDIT_PARAM_1:
+      if (hw_.encoder_pressed()) {
+        state_ = UI_STATE_PULL;
+      }
+      break;
+      
+    default:
+      state_ = UI_STATE_PULL;
+      break;
+  }
+}
 
-  DISALLOW_COPY_AND_ASSIGN(Ui);
-};
+void Ui::Paint() {
+  canvas_.Clear();
+  canvas_.Write();
+}
 
 }  // namespace braids
-
-#endif // BRAIDS_UI_H_
