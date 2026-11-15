@@ -22,10 +22,10 @@ jobs:
 
       - name: Compile Braids and Generate WAV
         run: |
-          COMPILER_FLAGS="CC=arm-none-eabi-gcc CXX=arm-none-eabi-g++ AR=arm-none-eabi-ar OBJCOPY=arm-none-eabi-objcopy SIZE=arm-none-eabi-size OPTIM=-O3"
-          make -f braids/makefile $COMPILER_FLAGS clean
-          make -f braids/makefile $COMPILER_FLAGS
-          make -f braids/makefile $COMPILER_FLAGS wav
+          cd braids
+          make clean
+          make OPTIM=-O3
+          make wav
 
       - name: Save Firmware WAV Artifact
         uses: actions/upload-artifact@v4
