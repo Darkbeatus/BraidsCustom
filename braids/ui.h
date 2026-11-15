@@ -26,73 +26,52 @@
 //
 // User interface.
 
-#include "braids/ui.h"
+#ifndef BRAIDS_UI_H_
+#define BRAIDS_UI_H_
 
-#include <algorithm>
-
-#include "stmlib/system/stmlib.h"
+#include "stmlib/stmlib.h"
 
 #include "braids/resources.h"
 #include "braids/settings.h"
 
 namespace braids {
 
-using namespace stmlib;
+enum UiState {
+  UI_STATE_PULL,
+  UI_STATE_EDIT_PARAM_1,
+  UI_STATE_EDIT_PARAM_2
+};
 
-void Ui::Init() {
-  hw_.Init();
-  display_.Init();
-  
-  // Custom power-on boot splash for 909 Pure-Rumble Engine
-  display_.Clear();
-  display_.Print(0, 28, "CAN YOU KICK IT");
-  display_.Write();
-  
-  // Delay loop to hold the startup banner on screen
-  for (volatile uint32_t i = 0; i < 3000000; ++i) {
-    __NOP(); 
-  }
-  
-  display_.Clear();
-  
-  settings_.Init();
-  canvas_.Init();
-  
-  mode_ = UI_MODE_SETTINGS;
-  state_ = UI_STATE_PULL;
-  
-  encoder_state_ = 0;
-  press_time_ = 0;
-}
+enum UiMode {
+  UI_MODE_SETTINGS,
+  UI_MODE_CALIBRATION_CV,
+  UI_MODE_CALIBRATION_OCTAVE,
+  UI_MODE_ABOUT
+};
 
-void Ui::Poll() {
-  hw_.Debounce();
-  evented_ = false;
-  
-  uint8_t previous_state = state_;
-  
-  switch (state_) {
-    case UI_STATE_PULL:
-      if (hw_.encoder_pressed()) {
-        state_ = UI_STATE_EDIT_PARAM_1;
-      }
-      break;
-      
-    case UI_STATE_EDIT_PARAM_1:
-      if (hw_.encoder_pressed()) {
-        state_ = UI_STATE_PULL;
-      }
-      break;
-      
-    default:
-      state_ = UI_STATE_PULL;
-      break;
-  }
-}
+class Ui {
+ public:
+  Ui() { }
+  ~Ui() { }
 
-void Ui::Paint() {
-  canvas_.Clear();
-  canvas_.Write();
-}
+  void Init();
+  void Poll();
+  void Paint();
+
+ private:
+  ResourcesManager resources_;
+  Settings settings_;
+  
+  UiState state_;
+  UiMode mode_;
+  
+  uint16_t encoder_state_;
+  uint32_t press_time_;
+  bool evented_;
+
+  DISALLOW_COPY_AND_ASSIGN(Ui);
+};
 
 }  // namespace braids
+
+#endif  // BRAIDS_UI_H_
