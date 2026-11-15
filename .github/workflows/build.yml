@@ -22,9 +22,9 @@ jobs:
 
       - name: Compile Braids and Generate WAV
         run: |
-          make -f braids/makefile TOOLCHAIN_PATH=/usr/bin/ clean
-          make -f braids/makefile TOOLCHAIN_PATH=/usr/bin/ OPTIM=-O3
-          make -f braids/makefile TOOLCHAIN_PATH=/usr/bin/ wav
+          make -f braids/makefile TOOLCHAIN_PATH=/usr clean
+          make -f braids/makefile TOOLCHAIN_PATH=/usr OPTIM=-O3
+          make -f braids/makefile TOOLCHAIN_PATH=/usr wav
 
       - name: Save Firmware WAV Artifact
         uses: actions/upload-artifact@v4
